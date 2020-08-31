@@ -36,7 +36,14 @@ function createUpdater(app) {
       libPath.resolve(app.settings.scratchDir, 'sucked.zip')
     );
 
-    log.info(`TODO...`, downloadResult);
+    log.info(`Unpacking...`);
+    const unpackResult = await app.unpacker.unpack(
+      downloadResult.targetPath,
+      libPath.resolve(app.settings.scratchDir, 'unpacked'),
+      true
+    );
+
+    console.log(unpackResult);
   }
 }
 
