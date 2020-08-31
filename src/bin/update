@@ -1,13 +1,20 @@
 #!/usr/bin/env node
 
+const settings = require('../settings');
+
+const queryString = require('querystring');
+const libPath = require('path');
+
 const axios = require('axios').default;
-const {CookieJar} = require('tough-cookie');
+const { v4: uuidv4 } = require('uuid');
+const { CookieJar } = require('tough-cookie');
+const fsExtra = require('fs-extra');
 
 require('axios-cookiejar-support').default(axios);
 
 const { log } = require('mayan-logger');
 
-const settings = require('../settings');
+const ZIP_NAME = 'sucked.zip';
 
 main().catch(err => {
   console.error(err.stack || err);
@@ -16,15 +23,91 @@ main().catch(err => {
 
 // *********************************************************************************************************************
 
+function parseValue(name, data) {
+  const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`,\\s*"${escapedName}"\\s*:\\s*"([^"]+)"`);
+  const match = regex.exec(data);
+  if (!match) {
+    throw new Error(`Failed to parse "${name}" from downloaded data`);
+  }
+
+  const value = JSON.parse(`"${match[1]}"`);
+  return value;
+}
+
 async function main() {
-  log.info(`Fetching link...`);
-  
+  if (libPath.resolve(settings.targetDir) === libPath.resolve(settings.scratchDir)) {
+    throw new Error(`Your scratch and target dir shouldn't be the same`);
+  }
+
+  log.info(`Preparing target location at ${settings.targetDir}...`);
+  await fsExtra.ensureDir(libPath.resolve(settings.targetDir));
+
+  log.info(`Preparing scratch dir at ${settings.scratchDir}...`);
+  await fsExtra.emptyDir(libPath.resolve(settings.scratchDir));
+
+  log.info(`Fetching HTML from ${settings.sourceUrl}...`);
+
   const cookieJar = new CookieJar();
-  
+
   const resp = await axios.get(settings.sourceUrl, {
     withCredentials: true,
-    jar: cookieJar
+    jar: cookieJar,
   });
-  
-  console.log(resp);
+
+  log.info(`Page opened, ${resp.data.length} characters in the HTML`);
+  log.verbose(resp.data);
+
+  const mediaBaseUrl = parseValue('.mediaBaseUrl', resp.data);
+  log.info(`Media base URL: ${mediaBaseUrl}`);
+
+  const fileUrl = parseValue('CurrentFolderSpItemUrl', resp.data);
+  log.info(`File url: ${fileUrl}`);
+
+  const accessToken = parseValue('.driveAccessToken', resp.data);
+  log.info(`Access token: ${accessToken}`);
+
+  const downloadUrl = `${mediaBaseUrl}/transform/zip`;
+  const docId = fileUrl + '&' + accessToken;
+  const downloadRequest = {
+    zipFileName: ZIP_NAME,
+    guid: uuidv4(),
+    provider: 'spo',
+    files: JSON.stringify({
+      items: [
+        {
+          name: ZIP_NAME,
+          size: 0,
+          docId,
+          isFolder: true,
+        },
+      ],
+    }),
+  };
+  log.info(`Initiating download from ${downloadUrl}, docId: ${docId}`);
+  const downloadResponse = await axios.post(downloadUrl, queryString.encode(downloadRequest), {
+    withCredentials: true,
+    jar: cookieJar,
+    headers: {
+      'content-type': 'application/x-www-form-urlencoded',
+    },
+    responseType: 'stream',
+  });
+
+  if (downloadResponse.status >= 400) {
+    throw new Error(`Failed to download ${downloadUrl} (code: ${downloadResponse.status})`);
+  }
+
+  const zipPath = libPath.resolve(settings.scratchDir, ZIP_NAME);
+  log.info(`Download started, saving into ${zipPath}...`);
+
+  const writeStream = fsExtra.createWriteStream(zipPath);
+  downloadResponse.data.pipe(writeStream);
+  await new Promise((resolve, reject) => {
+    writeStream.on('finish', resolve);
+    writeStream.on('error', reject);
+  });
+
+  const stats = await fsExtra.stat(zipPath);
+  log.info(`Folder downloaded into ${zipPath}: ${Math.floor(stats.size / 1000)}kb`);
 }
