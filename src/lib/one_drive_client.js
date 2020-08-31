@@ -9,10 +9,12 @@ const fsExtra = require('fs-extra');
 require('axios-cookiejar-support').default(axios);
 
 /**
- * @param {MayanLogCollector} log
+ * @param {AppContainer} app
  */
-function createOneDriveClient(log) {
-  return /** @lends OneDriveClient.prototype */ {
+function createOneDriveClient(app) {
+  const log = app.logger.for('OneDriveClient');
+
+  return /** @lends {OneDriveClient.prototype} */ {
     downloadFolder,
   };
 

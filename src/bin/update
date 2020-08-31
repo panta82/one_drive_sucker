@@ -1,13 +1,7 @@
 #!/usr/bin/env node
 
-const settings = require('../settings');
-
-const libPath = require('path');
-
-const fsExtra = require('fs-extra');
-const { logger } = require('mayan-logger');
-
-const { createOneDriveClient } = require('../one_drive_client');
+const { loadSettings } = require('../settings');
+const { AppContainer } = require('../app_container');
 
 main().catch(err => {
   console.error(err.stack || err);
@@ -17,26 +11,10 @@ main().catch(err => {
 // *********************************************************************************************************************
 
 async function main() {
-  const log = logger.log;
+  const settings = loadSettings();
+  const app = new AppContainer(settings);
 
-  const oneDriveClient = createOneDriveClient(logger.for('OneDrive client'));
+  await app.initialize();
 
-  if (libPath.resolve(settings.targetDir) === libPath.resolve(settings.scratchDir)) {
-    throw new Error(`Your scratch and target dir shouldn't be the same`);
-  }
-
-  log.info(`Preparing target location at ${settings.targetDir}...`);
-  await fsExtra.ensureDir(libPath.resolve(settings.targetDir));
-
-  log.info(`Preparing scratch dir at ${settings.scratchDir}...`);
-  await fsExtra.emptyDir(libPath.resolve(settings.scratchDir));
-
-  log.info(`Downloading the drive...`);
-
-  const downloadResult = await oneDriveClient.downloadFolder(
-    settings.sourceUrl,
-    libPath.resolve(settings.scratchDir, 'sucked.zip')
-  );
-
-  log.info(`TODO...`, downloadResult);
+  await app.updater.update();
 }

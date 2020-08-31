@@ -16,8 +16,15 @@ function env(key, defaultValue = undefined) {
   return value;
 }
 
+function loadSettings() {
+  return /** @lends Settings.prototype */ {
+    logLevel: env('LOG_LEVEL', 'info'),
+    sourceUrl: env('SOURCE_URL'),
+    scratchDir: env('SCRATCH_DIR', libPath.resolve(require('os').tmpdir(), 'onedrive-sucker')),
+    targetDir: env('TARGET_DIR'),
+  };
+}
+
 module.exports = {
-  sourceUrl: env('SOURCE_URL'),
-  scratchDir: env('SCRATCH_DIR', libPath.resolve(require('os').tmpdir(), 'onedrive-sucker')),
-  targetDir: env('TARGET_DIR'),
+  loadSettings,
 };
