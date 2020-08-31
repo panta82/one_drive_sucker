@@ -1,10 +1,10 @@
 {
 	"name": "onedrive-sucker",
 	"version": "0.0.1",
-	"description": "Project onedrive-sucker",
-	"main": "index.js",
+	"description": "Suck a directory out of a OneDrive link without having to click like a peasant. Optionally compare its content with previous version and send alerts if there are changes.",
+	"main": "src/bin/one-drive-sucker",
 	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1"
+		"download": "src/bin/one-drive-sucker download"
 	},
 	"devDependencies": {
 		"@types/fs-extra": "^9.0.1",
