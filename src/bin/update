@@ -1,0 +1,30 @@
+#!/usr/bin/env node
+
+const axios = require('axios').default;
+const {CookieJar} = require('tough-cookie');
+
+require('axios-cookiejar-support').default(axios);
+
+const { log } = require('mayan-logger');
+
+const settings = require('../settings');
+
+main().catch(err => {
+  console.error(err.stack || err);
+  process.exit(1);
+});
+
+// *********************************************************************************************************************
+
+async function main() {
+  log.info(`Fetching link...`);
+  
+  const cookieJar = new CookieJar();
+  
+  const resp = await axios.get(settings.sourceUrl, {
+    withCredentials: true,
+    jar: cookieJar
+  });
+  
+  console.log(resp);
+}

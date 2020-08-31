@@ -11,5 +11,12 @@
 	},
 	"keywords": [],
 	"author": "",
-	"license": "MIT"
+	"license": "MIT",
+	"dependencies": {
+		"axios": "^0.20.0",
+		"axios-cookiejar-support": "^1.0.0",
+		"dotenv": "^8.2.0",
+		"mayan-logger": "^1.5.0",
+		"tough-cookie": "latest"
+	}
 }
