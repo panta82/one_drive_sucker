@@ -1,0 +1,72 @@
+#!/usr/bin/env node
+
+const { program } = require('commander');
+
+const { loadSettings, ENVS } = require('../app_settings');
+const { AppContainer } = require('../app_container');
+
+program
+  .description(
+    'Suck a directory out of a OneDrive link without having to click like a peasant. ' +
+      'Optionally compare its content with previous version and send alerts if there are changes.'
+  )
+  .option(
+    '-t, --target <DIR>',
+    `Target directory, where folder will be downloaded (overrides ${ENVS.TARGET_DIR})`
+  )
+  .option(
+    '-s, --source <URL>',
+    `Source url, from which to download files (overrides ${ENVS.SOURCE_URL})`
+  );
+
+program
+  .command(`download`)
+  .description('Just download the drive to a location on HDD')
+  .action(() =>
+    run({}, async app => {
+      await app.coordinator.download();
+    })
+  );
+
+program.on('--help', () => {
+  console.log();
+  console.log(`Supported envs:\n  ${Object.keys(ENVS).join(', ')}`);
+
+  console.log();
+  const settings = loadSettings();
+  console.log('Loaded settings:');
+  const maxKeyLength = Object.keys(settings).reduce((max, key) => Math.max(max, key.length), 0);
+  Object.keys(settings).forEach(key => {
+    console.log(`  ${(key + ':').padEnd(maxKeyLength + 3)}${settings[key]}`);
+  });
+  console.log();
+});
+
+program.parse();
+
+// *********************************************************************************************************************
+
+/**
+ * @param additionalSettings
+ * @param {function(app: AppContainer)} runner
+ */
+async function run(additionalSettings, runner) {
+  try {
+    additionalSettings = {
+      ...additionalSettings,
+      [ENVS.TARGET_DIR]: program.target,
+      [ENVS.SOURCE_URL]: program.source,
+    };
+
+    const settings = loadSettings(additionalSettings);
+
+    const app = new AppContainer(settings);
+
+    await app.initialize();
+
+    await runner(app);
+  } catch (err) {
+    console.error(err.stack || err);
+    process.exit(1);
+  }
+}

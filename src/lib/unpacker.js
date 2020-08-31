@@ -50,17 +50,16 @@ function createUnpacker(app) {
 
   /**
    * @param zipFile
-   * @param targetDirectory
+   * @param destinationDir
    * @param unwrap If true, we will remove wrapping directory if we find it
-   * @return {Promise<void>}
    */
-  async function unpack(zipFile, targetDirectory, unwrap = false) {
-    log.info(`Emptying ${targetDirectory}...`);
-    await fsExtra.emptyDir(targetDirectory);
+  async function unpack(zipFile, destinationDir, unwrap = false) {
+    log.info(`Emptying ${destinationDir}...`);
+    await fsExtra.emptyDir(destinationDir);
 
     log.info(`Unpacking ${zipFile}...`);
     await extractZip(zipFile, {
-      dir: targetDirectory,
+      dir: destinationDir,
       onEntry: entry => {
         log.verbose(`Extracting "${entry.fileName}"...`);
       },
@@ -69,14 +68,14 @@ function createUnpacker(app) {
     let unwrapped = false;
     if (unwrap) {
       log.info(`Unwrapping...`);
-      unwrapped = await unwrapDirectory(targetDirectory);
+      unwrapped = await unwrapDirectory(destinationDir);
     }
 
-    log.info(`${zipFile} unpacked into ${targetDirectory}${unwrapped ? ' and unwrapped' : ''}`);
+    log.info(`${zipFile} unpacked into ${destinationDir}${unwrapped ? ' and unwrapped' : ''}`);
 
     return {
       zipFile,
-      targetDirectory,
+      destinationDir,
       unwrapped,
     };
   }

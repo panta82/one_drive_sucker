@@ -4,13 +4,13 @@ const fsExtra = require('fs-extra');
 
 /**
  * @param {AppContainer} app
- * @return {Updater}
+ * @return {Coordinator}
  */
-function createUpdater(app) {
-  const log = app.logger.for('Updater');
-  return /** @lends Updater.prototype */ {
+function createCoordinator(app) {
+  const log = app.logger.for('Coordinator');
+  return /** @lends Coordinator.prototype */ {
     initialize,
-    update,
+    download,
   };
 
   async function initialize() {
@@ -26,9 +26,9 @@ function createUpdater(app) {
   }
 
   /**
-   * Update the target directory and emit notifications, if needed
+   * Download the configured remote one-drive into the target directory
    */
-  async function update() {
+  async function download() {
     log.info(`Downloading the drive...`);
 
     const downloadResult = await app.oneDriveClient.downloadFolder(
@@ -43,10 +43,14 @@ function createUpdater(app) {
       true
     );
 
-    console.log(unpackResult);
+    log.info(`Saving...`);
+    await fsExtra.remove(app.settings.targetDir);
+    await fsExtra.move(unpackResult.destinationDir, app.settings.targetDir);
+
+    log.info(`Done. Files are available at ${app.settings.targetDir}`);
   }
 }
 
 module.exports = {
-  createUpdater,
+  createCoordinator,
 };

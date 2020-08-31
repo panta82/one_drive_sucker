@@ -1,12 +1,12 @@
 const { MayanLogger } = require('mayan-logger');
 
 const { createOneDriveClient } = require('./lib/one_drive_client');
-const { createUpdater } = require('./lib/updater');
+const { createCoordinator } = require('./lib/coordinator');
 const { createUnpacker } = require('./lib/unpacker');
 
 class AppContainer {
   /**
-   * @param {Settings} settings
+   * @param {AppSettings} settings
    */
   constructor(settings) {
     this.settings = settings;
@@ -23,12 +23,12 @@ class AppContainer {
     /** @type {Unpacker} */
     this.unpacker = createUnpacker(this);
 
-    /** @type {Updater} */
-    this.updater = createUpdater(this);
+    /** @type {Coordinator} */
+    this.coordinator = createCoordinator(this);
   }
 
   async initialize() {
-    await this.updater.initialize();
+    await this.coordinator.initialize();
   }
 }
 
