@@ -1,6 +1,7 @@
 const libPath = require('path');
 
 const fsExtra = require('fs-extra');
+const nodeCron = require('node-cron');
 
 /**
  * @param {AppContainer} app
@@ -8,9 +9,16 @@ const fsExtra = require('fs-extra');
  */
 function createCoordinator(app) {
   const log = app.logger.for('Coordinator');
+
+  /** @type {ScheduledTask} */
+  let _cronTask;
+  let _cronRunning;
+
   return /** @lends Coordinator.prototype */ {
     initialize,
     download,
+    startDaemon,
+    stopDaemon,
   };
 
   async function initialize() {
@@ -48,6 +56,50 @@ function createCoordinator(app) {
     await fsExtra.move(unpackResult.destinationDir, app.settings.targetDir);
 
     log.info(`Done. Files are available at ${app.settings.targetDir}`);
+  }
+
+  /**
+   * Start background update process.
+   */
+  function startDaemon() {
+    stopDaemon();
+    _cronTask = nodeCron.schedule(app.settings.cron, executeCron);
+    log.info(`Download daemon started based on cron "${app.settings.cron}"`);
+  }
+
+  /**
+   * Method that actually executes scheduled task.
+   * NOTE calls of this method might overlap, depending on how long they take
+   * @return {Promise<void>}
+   */
+  async function executeCron() {
+    if (_cronRunning) {
+      log.warn(`Scheduled download was triggered while previous download hasn't completed yet!`);
+      return;
+    }
+
+    try {
+      _cronRunning = true;
+      await download();
+    } catch (err) {
+      log.error(`Scheduled download has failed`, err);
+    } finally {
+      _cronRunning = false;
+    }
+  }
+
+  /**
+   * Stop cron, if one is running. Returns true if cron was stopped.
+   */
+  function stopDaemon() {
+    if (!_cronTask) {
+      return false;
+    }
+
+    _cronTask.stop();
+    _cronTask = null;
+    log.info(`Cron stopped`);
+    return true;
   }
 }
 

@@ -28,6 +28,28 @@ program
     })
   );
 
+program
+  .command(`daemon`)
+  .description(
+    'Start a daemon which will perform the download action based on given cron parameter'
+  )
+  .option(
+    '-c, --cron <CRON>',
+    `Cron specification to use, determines how often to fire the action (overrides ${ENVS.CRON})`
+  )
+  .action(({ cron }) =>
+    run(
+      {
+        [ENVS.CRON]: cron,
+      },
+      async app => {
+        app.coordinator.startDaemon();
+
+        // TODO: Setup signal handlers, that call stopDaemon when user presses Ctrl+C or similar signal is seen
+      }
+    )
+  );
+
 program.on('--help', () => {
   console.log();
   console.log(`Supported envs:\n  ${Object.keys(ENVS).join(', ')}`);
