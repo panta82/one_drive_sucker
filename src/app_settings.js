@@ -9,6 +9,7 @@ const ENVS = {
   SOURCE_URL: 'SOURCE_URL',
   SCRATCH_DIR: 'SCRATCH_DIR',
   TARGET_DIR: 'TARGET_DIR',
+  REPLACE_TARGET: 'REPLACE_TARGET',
   CRON: 'CRON',
 };
 
@@ -18,6 +19,7 @@ function loadSettings(overrides = {}) {
     sourceUrl: env(ENVS.SOURCE_URL),
     scratchDir: env(ENVS.SCRATCH_DIR, libPath.resolve(require('os').tmpdir(), 'one_drive_sucker')),
     targetDir: env(ENVS.TARGET_DIR),
+    replaceTarget: asBoolean(env(ENVS.REPLACE_TARGET, 'false')),
     cron: env(ENVS.CRON, '0 6 * * *'), // Default: 6AM
   };
 
@@ -36,7 +38,12 @@ function loadSettings(overrides = {}) {
       return defaultValue;
     }
 
-    throw new TypeError(`Enviromental variable ${key} is required`);
+    throw new TypeError(`Environmental variable ${key} is required`);
+  }
+
+  function asBoolean(str) {
+    str = String(str).toLowerCase();
+    return !!(str && str !== 'false');
   }
 }
 

@@ -1,6 +1,6 @@
 {
 	"name": "onedrive-sucker",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "Suck a directory out of a OneDrive link without having to click like a peasant. Optionally compare its content with previous version and send alerts if there are changes.",
 	"main": "src/bin/one-drive-sucker",
 	"scripts": {

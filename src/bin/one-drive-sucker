@@ -17,6 +17,10 @@ program
   .option(
     '-s, --source <URL>',
     `Source url, from which to download files (overrides ${ENVS.SOURCE_URL})`
+  )
+  .option(
+    '-r, --replace',
+    `Replace all files in the target directory with the downloaded, instead of merging (overrides ${ENVS.REPLACE_TARGET})`
   );
 
 program
@@ -78,6 +82,7 @@ async function run(additionalSettings, runner) {
       ...additionalSettings,
       [ENVS.TARGET_DIR]: program.target,
       [ENVS.SOURCE_URL]: program.source,
+      [ENVS.REPLACE_TARGET]: program.replace,
     };
 
     const settings = loadSettings(additionalSettings);

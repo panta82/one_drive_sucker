@@ -3,6 +3,8 @@ const libPath = require('path');
 const fsExtra = require('fs-extra');
 const nodeCron = require('node-cron');
 
+const { ENVS } = require('../app_settings');
+
 /**
  * @param {AppContainer} app
  * @return {Coordinator}
@@ -52,8 +54,19 @@ function createCoordinator(app) {
     );
 
     log.info(`Saving...`);
-    await fsExtra.remove(app.settings.targetDir);
-    await fsExtra.move(unpackResult.destinationDir, app.settings.targetDir);
+    if (app.settings.replaceTarget) {
+      log.warn(
+        `Deleting all existing data in ${app.settings.targetDir} due to the "${ENVS.REPLACE_TARGET}" flag`
+      );
+      await fsExtra.remove(app.settings.targetDir);
+      await fsExtra.move(unpackResult.destinationDir, app.settings.targetDir);
+    } else {
+      await fsExtra.copy(unpackResult.destinationDir, app.settings.targetDir, {
+        overwrite: true,
+        preserveTimestamps: true,
+        recursive: true,
+      });
+    }
 
     log.info(`Done. Files are available at ${app.settings.targetDir}`);
   }
